@@ -1,0 +1,145 @@
+{% extends 'layout/manage.html' %}
+{% load static %}
+{% block title %}Wiki{% endblock %}
+
+{% block css %}
+    <link rel="stylesheet" href="{% static 'plugin/markdown/css/editormd.min.css' %}">
+
+    <style>
+        .panel-body {
+            padding: 0px;
+        }
+
+        .panel-default .panel-heading {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+        }
+
+        .title-list {
+            border-right: 1px solid #dddddd;
+            min-height: 600px;
+        }
+
+        .content {
+            border-left: 1px solid #dddddd;
+            min-height: 600px;
+        }
+
+        .directory {
+            padding-top: 20px;
+        }
+
+        .directory ul {
+            padding-left: 20px;
+        }
+
+        #catalog li a {
+            display: inline-block;
+            padding: 5px;
+        }
+        .editormd-fullscreen{
+            z-index: 1020;
+        }
+
+    </style>
+{% endblock %}
+
+{% block content %}
+    <div class="container-fluid">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <div>
+                    <i class="fa fa-book" aria-hidden="true"></i> wiki
+                </div>
+                <div class="function">
+                    <a href="{% url 'app01:wiki_add' request.userInfo.project.id %}" class="btn btn-success btn-xs">
+                        <i class="fa fa-plus" aria-hidden="true"></i> 新建</a>
+                    </a>
+                </div>
+            </div>
+            <div class="panel-body">
+                <div class="col-md-3 title-list">
+                    <div class="directory">
+                        <ul id="catalog">
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-md-9 content">
+                    <form method="POST" style="padding-top: 20px">
+                        {% csrf_token %}
+                        {% for field in form %}
+                            {% if field.name == "content" %}
+                                <div class="form-group">
+                                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                    <div id="editor">
+                                        {{ field }}
+                                    </div>
+                                    <span class="error-msg">{{ field.errors.0 }}</span>
+                                </div>
+                            {% else %}
+                                <div class="form-group">
+                                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                    {{ field }}
+                                    <span class="error-msg">{{ field.errors.0 }}</span>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                        <button type="submit" class="btn btn-default">提交</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block js %}
+    <script src="{% static 'plugin/markdown/editormd.min.js' %}"></script>
+    <script>
+        var WIKI_DETAIL_URL = "{% url 'app01:wiki' request.userInfo.project.id %}";
+        var WIKI_UPLOAD_URL = "{% url 'app01:wiki_upload' request.userInfo.project.id %}";
+        $(function () {
+            initCatalog();
+            initEditor();
+        });
+
+        function initCatalog() {
+            $.ajax({
+                url: "{% url 'app01:wiki_catalog' request.userInfo.project.id %}",
+                type: "GET",
+                dataType: "json",
+                success: function (res) {
+                    //console.log(res);
+                    if (res.status) {
+                        console.log(res.data)
+                        $.each(res.data, function (index, item) {
+                            var href = WIKI_DETAIL_URL + "?wiki_id=" + item.id;
+                            var li = $("<li>").attr('id', 'id_' + item.id).append($("<a>").text(item.title).attr('href', href)).append($("<ul>"));
+                            if (!item.parent_id) {
+                                $("#catalog").append(li);
+                            } else {
+                                $("#id_" + item.parent_id).children('ul').append(li);
+                            }
+                        })
+                    } else {
+                        alert('初始化目录失败');
+                    }
+
+
+                }
+
+            })
+
+        }
+        function initEditor() {
+            editormd('editor',{
+                placeholder:"请输入内容",
+                height:500,
+                path:"{% static 'plugin/markdown/lib/' %}",
+                imageUpload:true,
+                imageFormats:['jpg','jpeg','png','gif'],
+                imageUploadURL:WIKI_UPLOAD_URL
+            })
+        }
+    </script>
+{% endblock %}

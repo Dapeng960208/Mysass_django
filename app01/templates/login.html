@@ -1,0 +1,75 @@
+{% extends 'layout/basic.html' %}
+{% block title %}
+    用户登录
+{% endblock %}
+{% block css %}
+    <style>
+        .register {
+            width: 400px;
+            margin-top: 30px;
+            margin-left: auto;
+            margin-right: auto;
+            padding: 10px 30px 30px;
+            border: 1px solid #f0f0f0;
+            box-shadow: 5px 10px 10px rgba(0, 0, 0, 0.05);
+            -webkit-box-shadow: 5px 10px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .error_msg {
+            color: red;
+            position: absolute;
+            font-size: 12px;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <div class="register">
+        <h3 style="text-align: center">用户登录</h3>
+        <form id="login_sms_form" method="post">
+            {% csrf_token %}
+            {% for field in form %}
+                {% if field.name == 'code' %}
+                    <div class="form-group">
+                        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        <div class="clearfix">
+                            <div class="col-md-7" style="padding-left: 0px">
+                                {{ field }}
+                                <span class="error_msg">{{ field.errors.0 }}</span>
+                            </div>
+                            <div class="col-md-5" style="padding-right: 0px">
+                                <img src="{% url 'app01:image_code' %}" id="imageCode" alt="">
+                            </div>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="form-group">
+                        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        {{ field }}
+                        <span class="error_msg">{{ field.errors.0 }}</span>
+                    </div>
+                {% endif %}
+            {% endfor %}
+            <div>
+                <div style="float: right;margin-right: 40px ;margin-top: 7px">
+                    <a href="{% url 'app01:login_sms' %}">免密登录</a>
+                </div>
+            </div>
+            <div style="margin-left: 28px">
+                <button type="submit" class="btn btn-primary " style="width: 40%">登录</button>
+            </div>
+        </form>
+    </div>
+{% endblock %}
+{% block js %}
+    <script>
+        $(function () {
+            $('#imageCode').click(function () {
+                const oldUrl = $(this).attr('src');
+                //image/code/? 多加一个？,重新发送一次请求
+                $(this).attr('src', oldUrl + '?');
+            })
+
+        })
+    </script>
+{% endblock %}

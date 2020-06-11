@@ -1,0 +1,24 @@
+<li class="dropdown ">
+    <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true"
+       aria-expanded="false">项目{% if request.userInfo.project %} <span style="font-size: 12px">({{request.userInfo.project.name}})</span>
+    {% endif %}
+        <span class="caret"></span>
+    </a>
+    <ul class="dropdown-menu">
+        {% if my %}
+            <li><i class="fa fa-anchor" aria-hidden="true"></i> 我创建的项目</li>
+            {% for foo in my %}
+                <li><a href="{% url 'app01:dashboard' foo.id %}">{{ foo.name }}</a></li>
+            {% endfor %}
+        {% endif %}
+        <li role="separator" class="divider"></li>
+        {% if join %}
+            <li><i class="fa fa-bug" aria-hidden="true"></i> 我参与的项目</li>
+            {% for foo in join %}
+                <li><a href="{% url 'app01:dashboard' foo.project.id %}">{{ foo.project.name }}</a></li>
+            {% endfor %}
+        {% endif %}
+        <li role="separator" class="divider"></li>
+        <li><a href="#">所有项目</a></li>
+    </ul>
+</li>

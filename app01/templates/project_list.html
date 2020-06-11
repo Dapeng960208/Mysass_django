@@ -1,0 +1,257 @@
+{% extends 'layout/manage.html' %}
+{% block title %}
+    项目
+{% endblock %}
+<style>
+    .btn {
+        background-color: #0f0f0f;
+    }
+</style>
+{% block css %}
+    <style>
+        .btn-bottom {
+            margin-bottom: 15px;
+        }
+
+        .panel-body {
+            padding: 20px 5px 5px;
+        }
+
+        .item {
+            height: 180px;
+            border-radius: 10px;
+            border: 1px solid blue;
+            margin-bottom: 16px;
+        }
+
+        .title {
+            width: 100%;
+            height: 75%;
+            display: inline-block;
+            font-size: 20px;
+            text-align: center;
+            vertical-align: middle;
+            border-top-right-radius: 10px;
+            border-top-left-radius: 10px;
+        }
+
+        .projectName {
+            display: inline-block;
+            margin-top: 50px;
+            color: whitesmoke;
+            font-size: 20px;
+        }
+
+        .info {
+            text-align: center;
+            width: 100%;
+            height: 25%;
+        }
+
+        .info-span {
+            width: 49%;
+            height: 100%;
+            font-size: 16px;
+            display: inline-block;
+        }
+
+        .info-span > a {
+            vertical-align: middle;
+            color: grey;
+            text-decoration: none;
+            font-size: 20px;
+        }
+
+        .info-span > span {
+            display: inline-block;
+            padding-top: 12px;
+        }
+
+        .color-radio input[type="radio"] {
+            display: none;
+        }
+
+        .cycle {
+            display: inline-block;
+            height: 25px;
+            width: 25px;
+            border-radius: 50%;
+            border: 2px solid navajowhite;
+        }
+
+        .color-radio input[type="radio"]:checked + .cycle {
+            border: 2px solid yellow;
+        }
+    </style>
+
+{% endblock %}
+
+{% block content %}
+    <div class="container-fluid">
+        <button type="button" class="btn btn-info btn-bottom " data-toggle="modal" data-target="#myModal">
+            <i class="fa fa-plus" aria-hidden="true"></i> 新建项目
+        </button>
+
+        <!-- 星标项目面板 -->
+        <div class="panel panel-default ">
+            <div class="panel-heading"><i class="fa fa-star" aria-hidden="true"></i> 星标的项目</div>
+            <div class="panel-body container-fluid">
+                {% for foo in project_dic.star %}
+                    <div class=" col-xs-12 col-sm-6  col-md-4 col-lg-3">
+                        <div class="item">
+                            <a href="{% url 'app01:dashboard' foo.id %}" style="background-color: {{ foo.get_color_display }};"
+                               class="title"><span class="projectName">{{ foo.name }}</span></a>
+                            <div class="info">
+                                <div class="info-span">
+                                    <a href="#" id="project_star" project_type="star" project_id="{{ foo.id }}"
+                                       style="color: yellow"><i class="fa fa-star" aria-hidden="true"></i>
+                                    </a>
+                                    <span>{{ foo.creator.username }}</span>
+                                </div>
+                                <div class="info-span">
+                                    <a href="#"><i class="fa fa-hand-o-right" aria-hidden="true"></i></a>
+                                    <span>{{ foo.join_count }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+        <!-- 我创建的项目面板 -->
+        <div class="panel panel-default">
+            <div class="panel-heading"><i class="fa fa-anchor" aria-hidden="true"></i> 我创建的项目</div>
+            <div class="panel-body container-fluid">
+                {% for foo in project_dic.my %}
+                    <div class=" col-xs-12 col-sm-6  col-md-4 col-lg-3">
+                        <div class="item">
+                            <a href="{% url 'app01:dashboard' foo.id %}" style="background-color: {{ foo.get_color_display }};"
+                               class="title"><span class="projectName">{{ foo.name }}</span></a>
+                            <div class="info">
+                                <div class="info-span">
+                                    <a href="#" id="project_star" project_type="my" project_id="{{ foo.id }}"><i
+                                            class="fa fa-star" aria-hidden="true"></i>
+                                    </a>
+                                    <span> {{ foo.creator.username }}</span>
+                                </div>
+                                <div class="info-span">
+                                    <a href="#"><i class="fa fa-hand-o-right" aria-hidden="true"></i></a>
+                                    <span> {{ foo.join_count }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+        <!-- 我参与的项目面板 -->
+        <div class="panel panel-default">
+            <div class="panel-heading"><i class="fa fa-bug" aria-hidden="true"></i> 我参与的项目</div>
+            <div class="panel-body container-fluid">
+                {% for foo in project_dic.join %}
+                    <div class=" col-xs-12 col-sm-6  col-md-4 col-lg-3">
+                        <div class="item">
+                            <a href="{% url 'app01:dashboard' foo.id %}" style="background-color: {{ foo.get_color_display }};"
+                               class="title"><span class="projectName">{{ foo.name }}</span></a>
+                            <div class="info">
+                                <div class="info-span">
+                                    <a href="#" id="project_star" project_type="join" project_id="{{ foo.id }}"><i
+                                            class="fa fa-star" aria-hidden="true"></i>
+                                    </a>
+                                    <span>{{ foo.creator.username }}</span>
+                                </div>
+                                <div class="info-span">
+                                    <a href="#"><i class="fa fa-hand-o-right" aria-hidden="true"></i></a>
+                                    <span>{{ foo.join_count }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    <!-- 创建项目隐藏模态框 -->
+    <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                            aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="myModalLabel">新建项目</h4>
+                </div>
+                <div class="modal-body" id="projectForm">
+                    <form id="addForm">
+                        {% csrf_token %}
+                        {% for field in form %}
+                            <div class="form-group">
+                                <label for="{{ field.id_for_lable }}">{{field.label}}</label>
+                                {{ field }}
+                                <span class="error_msg"></span>
+                            </div>
+                        {% endfor %}
+
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" id="submitBtn">确认</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+{% endblock %}
+
+{% block js %}
+    <script>
+        $(function () {
+            bindSubmitBtn();
+            bindProjectStar();
+        });
+
+        function bindSubmitBtn() {
+            $('#submitBtn').click(function () {
+                $.ajax({
+                    url: "{% url 'app01:project_list' %}",
+                    type: "POST",
+                    data: $('#addForm').serialize(),
+                    dataType: "json",
+                    success: function (res) {
+                        console.log(res);
+                        if (res.status) {
+                            console.log(res.status);
+                            location.href = res.data;
+                        } else {
+                            $.each(res.error, function (key, value) {
+                                $('#id_' + key).next().text(value[0])
+                            })
+                        }
+                    }
+                })
+            });
+        }
+
+        function bindProjectStar() {
+            $("[id=project_star]").click(function () {
+                const project_type = $(this).attr('project_type');
+                const project_id = $(this).attr('project_id');
+                $.ajax({
+                    url: "{% url 'app01:project_star' %}",
+                    type: 'GET',
+                    data: {'project_type': project_type, 'project_id': project_id},
+                    dataType: "json",
+                    success: function (res) {
+                        console.log(res.status);
+                        if (res.status) {
+                            location.reload();
+                        }
+                    }
+                })
+
+            })
+        }
+    </script>
+{% endblock %}

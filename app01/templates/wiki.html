@@ -1,0 +1,147 @@
+{% extends 'layout/manage.html' %}
+{% load static %}
+{% block title %}Wiki{% endblock %}
+
+{% block css %}
+    <link rel="stylesheet" href="{% static 'plugin/markdown/css/editormd.preview.min.css' %}">
+    <style>
+        .panel-body {
+            padding: 0px;
+        }
+
+        .panel-default .panel-heading {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+        }
+
+        .title-list {
+            border-right: 1px solid #dddddd;
+            min-height: 600px;
+        }
+
+        .content {
+            border-left: 1px solid #dddddd;
+            min-height: 600px;
+        }
+
+        .directory {
+            padding-top: 20px;
+        }
+
+        .directory ul {
+            padding-left: 20px;
+        }
+
+        #catalog li a {
+            display: inline-block;
+            padding: 5px;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <div class="container-fluid">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <div>
+                    <i class="fa fa-book" aria-hidden="true"></i> wiki
+                </div>
+                <div class="function">
+                    <a href="{% url 'app01:wiki_add' request.userInfo.project.id %}" class="btn btn-success btn-xs">
+                        <i class="fa fa-plus" aria-hidden="true"></i> 新建
+                    </a>
+                    {% if wiki_obj %}
+                        <a href="{% url 'app01:wiki_delete' project_id=request.userInfo.project.id wiki_id=wiki_obj.id %}"
+                           class="btn btn-danger btn-xs">
+                            <i class="fa fa-trash" aria-hidden="true"></i> 删除
+                        </a>
+                        <a href="{% url 'app01:wiki_edit' project_id=request.userInfo.project.id wiki_id=wiki_obj.id %}"
+                           class="btn btn-primary btn-xs">
+                            <i class="fa fa-pencil-square-o" aria-hidden="true"></i> 编辑
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="panel-body">
+                <div class="col-md-3 title-list">
+                    <div class="directory">
+                        <ul id="catalog">
+                        </ul>
+                    </div>
+
+                </div>
+                <div class="col-md-9 content">
+                    {% if wiki_obj %}
+                        <div style="margin: 15px;">
+                            <h3 style="text-align: center">{{ wiki_obj.title }}</h3>
+                            <div id="previewMarkdown">
+                                <textarea >{{ wiki_obj.content }}</textarea>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div style="margin-top: 70px;text-align: center;">
+                            <h3>《{{ request.userInfo.project.name }}》wiki文档库</h3>
+                            <a href="{% url 'app01:wiki_add' request.userInfo.project.id %}"
+                               style="text-decoration: none">
+                                <i class="fa fa-plus" aria-hidden="true"></i> 新建文档</a>
+                        </div>
+                    {% endif %}
+
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block js %}
+    <script src="{% static 'plugin/markdown/editormd.min.js' %}"></script>
+    <script src="{% static 'plugin/markdown/lib/marked.min.js' %}"></script>
+    <script src="{% static 'plugin/markdown/lib/prettify.min.js' %}"></script>
+    <script src="{% static 'plugin/markdown/lib/raphael.min.js' %}"></script>
+    <script src="{% static 'plugin/markdown/lib/underscore.min.js' %}"></script>
+    <script src="{% static 'plugin/markdown/lib/sequence-diagram.min.js' %}"></script>
+    <script src="{% static 'plugin/markdown/lib/flowchart.min.js' %}"></script>
+    <script src="{% static 'plugin/markdown/lib/jquery.flowchart.min.js' %}"></script>
+    <script>
+        var WIKI_DETAIL_URL = "{% url 'app01:wiki' request.userInfo.project.id %}";
+        $(function () {
+            initCatalog();
+            initPreivewMarkdown();
+        });
+
+        function initCatalog() {
+            $.ajax({
+                url: "{% url 'app01:wiki_catalog' request.userInfo.project.id %}",
+                type: "GET",
+                dataType: "json",
+                success: function (res) {
+                    //console.log(res);
+                    if (res.status) {
+                        console.log(res.data)
+                        $.each(res.data, function (index, item) {
+                            var href = WIKI_DETAIL_URL + "?wiki_id=" + item.id;
+                            var li = $("<li>").attr('id', 'id_' + item.id).append($("<a>").text(item.title).attr('href', href)).append($("<ul>"));
+                            if (!item.parent_id) {
+                                $("#catalog").append(li);
+                            } else {
+                                $("#id_" + item.parent_id).children('ul').append(li);
+                            }
+                        })
+                    } else {
+                        alert('初始化目录失败');
+                    }
+
+
+                }
+
+            })
+
+        }
+        function initPreivewMarkdown() {
+            editormd.markdownToHTML("previewMarkdown", {
+                htmlDecode: "style,script,iframe"
+            });
+        }
+    </script>
+{% endblock %}

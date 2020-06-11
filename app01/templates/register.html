@@ -1,0 +1,134 @@
+{% extends 'layout/basic.html' %}
+{% block title %}
+    用户注册
+{% endblock %}
+{% block css %}
+    <style>
+        .register {
+            width: 400px;
+            margin-top: 30px;
+            margin-left: auto;
+            margin-right: auto;
+            padding: 10px 30px 30px;
+            border: 1px solid #f0f0f0;
+            box-shadow: 5px 10px 10px rgba(0, 0, 0, 0.05);
+            -webkit-box-shadow: 5px 10px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .error_msg {
+            color: red;
+            position: absolute;
+            font-size: 12px;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <div class="register">
+        <h3 style="text-align: center">注册</h3>
+        <form id="reg_form" method="post">
+            {% csrf_token %}
+            {% for field in form %}
+                {% if field.name == 'code' %}
+                    <div class="form-group">
+                        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        <div class="clearfix">
+                            <div class="col-md-7" style="padding-left: 0px">
+                                {{ field }}
+                                <span class="error_msg"></span>
+                            </div>
+                            <div class="col-md-5" style="padding-right: 0px"><input type="button" id="btnsms"
+                                                                                    class="btn btn-default"
+                                                                                    style="width: 100%" value="获取验证码">
+                            </div>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="form-group">
+                        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        {{ field }}
+                        <span class="error_msg"></span>
+                    </div>
+                {% endif %}
+            {% endfor %}
+            <button type="button" class="btn btn-primary " id="btnSubmit">注册</button>
+        </form>
+    </div>
+{% endblock %}
+
+{% block js %}
+    <script>
+        $(function () {
+            bindClickBtnsms();
+            bindClickBtnSubmit();
+        });
+
+        //获取验证码功能函数
+        function bindClickBtnsms() {
+            $('#btnsms').click(function () {
+                //获取手机号
+                const Telephone = $('#id_telephone').val();
+                $.ajax({
+                    url: '/send/sms/',
+                    type: 'GET',
+                    data: {telephone: Telephone, tpl: 'register'},
+                    dataType: 'JSON',//将服务端返回的数据反序列化为字典
+                    success: function (res) {
+                        console.log(res.status)
+                        //res 后端执行成功返回的值
+                        if (res.status) {
+                            //禁用按钮，开始倒计时
+                            $('.error_msg').empty();
+                            $('#btnsms').prop('disabled', true);
+                            var time = 60;
+                            var obj = setInterval(function () {
+                                time = time - 1;
+                                $('#btnsms').val(time + '重新发送');
+                                if (time == 0) {
+                                    clearInterval(obj);
+                                    $('#btnsms').prop('disabled', false);
+                                    $('#btnsms').val('重新发送');
+                                }
+                            }, 1000)
+
+                        } else {
+                            //res={'status':False,'error':{telphone,[error_msg]}}
+                            //先清除前面的错误信息，再展示这次的错误信息
+                            $('.error_msg').empty();
+                            $.each(res.error, function (key, value) {
+                                $("#id_" + key).next().text(value[0]);
+                            })
+                        }
+                    }
+                })
+
+            })
+
+        }
+
+        //表单注册（ajax）
+        function bindClickBtnSubmit() {
+            $('#btnSubmit').click(function () {
+                //data = $('#reg_form').serialize() 获取表单所有的数据
+                $('.error_msg').empty();
+                $.ajax({
+                    url: "{% url 'app01:register' %}",
+                    type: "POST",
+                    data: $('#reg_form').serialize(),
+                    dataType: "JSON",
+                    success: function (res) {
+                        if (res.status) {
+                            location.href = res.data;
+                        } else {
+                            console.log(res.error);
+                            $.each(res.error, function (key, value) {
+                                $("#id_" + key).next().text(value[0]);
+                            })
+                        }
+                    }
+                })
+            })
+
+        }
+    </script>
+{% endblock %}
