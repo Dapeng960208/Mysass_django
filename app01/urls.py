@@ -14,7 +14,7 @@ Including another URLconf
     2. Add a URL to urlpatterns:  url(r'^blog/', include('blog.urls'))
 """
 from django.conf.urls import url
-from app01.views import account, project, manage, wiki
+from app01.views import account, project, manage, wiki, file
 
 urlpatterns = [
     url(r'^register/$', account.register, name='register'),
@@ -35,9 +35,9 @@ urlpatterns = [
     url(r'^manage/(?P<project_id>\d+)/issues/$', manage.issues, name='issues'),
 
     url(r'^manage/(?P<project_id>\d+)/statistics/$', manage.statistics, name='statistics'),
-
-    url(r'^manage/(?P<project_id>\d+)/file/$', manage.file, name='file'),
-
+    # 文件路由管理
+    url(r'^manage/(?P<project_id>\d+)/file/$', file.file, name='file'),
+    # wiki路由管理
     url(r'^manage/(?P<project_id>\d+)/wiki/$', wiki.wiki, name='wiki'),
     url(r'^manage/(?P<project_id>\d+)/wiki/add/$', wiki.wiki_add, name='wiki_add'),
     url(r'^manage/(?P<project_id>\d+)/wiki/delete//(?P<wiki_id>\d+)/$', wiki.wiki_delete, name='wiki_delete'),
