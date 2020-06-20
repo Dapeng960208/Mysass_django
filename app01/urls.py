@@ -37,6 +37,7 @@ urlpatterns = [
     url(r'^manage/(?P<project_id>\d+)/statistics/$', manage.statistics, name='statistics'),
     # 文件路由管理
     url(r'^manage/(?P<project_id>\d+)/file/$', file.file, name='file'),
+    url(r'^manage/(?P<project_id>\d+)/file/delete/$', file.file_delete, name='file_delete'),
     # wiki路由管理
     url(r'^manage/(?P<project_id>\d+)/wiki/$', wiki.wiki, name='wiki'),
     url(r'^manage/(?P<project_id>\d+)/wiki/add/$', wiki.wiki_add, name='wiki_add'),

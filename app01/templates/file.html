@@ -84,14 +84,15 @@
                         <th>{{ file_obj.update_time }}</th>
                         <th>
                             {% if file_obj.file_type == 2 %}
-                                <a class="btn btn-success btn-xs" type="button" data-toggle="modal"
+                                <a class="btn btn-primary btn-xs" type="button" data-toggle="modal"
                                    data-target="#AddModal" data-whatever="编辑文件夹" data-name="{{ file_obj.name }}"
                                    data-fid="{{ file_obj.id }}">
                                     <i class="fa fa-pencil-square-o" aria-hidden="true"></i>
                                     编辑
                                 </a>
                             {% endif %}
-                            <a href="#">
+                            <a class="btn btn-danger btn-xs" type="button" data-toggle="modal"
+                               data-target="#DelModal" data-fid="{{ file_obj.id }}">
                                 <i class="fa fa-trash" aria-hidden="true"></i>
                                 删除
                             </a>
@@ -103,6 +104,7 @@
             </table>
         </div>
     </div>
+    <!-- 创建新建文件夹编辑文件模态框 -->
     <div class="modal fade" id="AddModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
@@ -132,13 +134,31 @@
             </div>
         </div>
     </div>
+    <!-- 创建删除文件模态框 -->
+    <div class="modal fade" id="DelModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+        <div class="modal-dialog" role="document">
+            <div class="alert alert-danger alert-dismissible fade in" role="alert">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                        aria-hidden="true">×</span></button>
+                <h3>是否确定删除?</h3>
+                <p style="font-size: 16px;">文件中包含的所有文件将被删除</p>
+                <p style="text-align: right;">
+                    <button type="button" class="btn btn-danger " id="BtnDelete" >确定</button>
+                    <a class="btn btn-default " data-dismiss="modal" aria-label="Close">取消</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
 {% endblock %}
 
 {% block js %}
     <script>
+        var Delete_Url = "{% url 'app01:file_delete' project_id=request.userInfo.project.id %}";
         $(function () {
             initAddModel();
             bindBtnSubmit();
+            bindBtnDelete();
         });
 
         function initAddModel() {
@@ -158,6 +178,13 @@
                     modal.find('.error_msg').empty();
                     $('#addForm')[0].reset();
                 }
+            })
+            $('#DelModal').on('show.bs.modal', function (event) {
+                var button = $(event.relatedTarget);
+                var fid = button.data('fid');
+                //console.log(fid);
+                var modal = $(this);
+                modal.find('#BtnDelete').attr('fid',fid);
             })
         }
 
@@ -181,6 +208,28 @@
 
                     }
                 })
+            })
+
+        }
+
+        function bindBtnDelete() {
+
+            $("#BtnDelete").click(function () {
+                var fid = $(this).attr('fid');
+                $.ajax({
+                    url:Delete_Url,
+                    type: "GET",
+                    data:{"fid":fid},
+                    dataType: 'json',
+                    success:function (res) {
+                        console.log(res);
+                        if(res.status){
+                            location.reload();
+                        }
+                    }
+
+                })
+
             })
 
         }
