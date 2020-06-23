@@ -1,8 +1,10 @@
 from django.shortcuts import render, redirect, reverse, HttpResponse
 from app01 import models
 from django.http import JsonResponse
-from app01.forms.file import FileModelFOrm
-from utils.tencent.cos import delete_file, delete_file_list
+from app01.forms.file import FileModelFOrm, FolderModelFOrm
+from utils.tencent.cos import delete_file, delete_file_list, get_cos_credential
+from django.views.decorators.csrf import csrf_exempt
+import json
 
 
 def file(request, project_id):
@@ -28,9 +30,10 @@ def file(request, project_id):
             # 不存在父目录（根目录） 找到根目录所有的子目录
             file_obj_list = queryset.filter(parent_file__isnull=True).order_by('-file_type')
 
-        form = FileModelFOrm(request, parent_obj)
+        form = FolderModelFOrm(request, parent_obj)
         return render(request, 'file.html',
-                      {'form': form, 'file_obj_list': file_obj_list, 'breadcrumb_list': breadcrumb_list})
+                      {'form': form, 'file_obj_list': file_obj_list, 'breadcrumb_list': breadcrumb_list,
+                       'folder_obj': parent_obj})
 
     # 新建文件夹 && 修改文件夹
     fid = request.POST.get('fid', '')
@@ -40,10 +43,10 @@ def file(request, project_id):
                                                         project=request.userInfo.project).first()
     if edit_obj:
         # 修改文件夹
-        form = FileModelFOrm(request, parent_obj, data=request.POST, instance=edit_obj)
+        form = FolderModelFOrm(request, parent_obj, data=request.POST, instance=edit_obj)
     else:
         # 新建文件夹
-        form = FileModelFOrm(request, parent_obj, data=request.POST)
+        form = FolderModelFOrm(request, parent_obj, data=request.POST)
     if form.is_valid():
         form.instance.project = request.userInfo.project
         form.instance.file_type = 2
@@ -80,7 +83,7 @@ def file_delete(request, project_id):
                 else:
                     # 文件
                     total_size += child.file_size
-                    key_list.appen({'Key': child.key})
+                    key_list.append({'Key': child.key})
         # 删除cos中 文件夹下所有的文件
         if key_list:
             delete_file_list(bucket_name=request.userInfo.project.bucket,
@@ -89,6 +92,63 @@ def file_delete(request, project_id):
         if total_size:
             request.userInfo.project.use_space -= total_size
             request.userInfo.project.save()
-    #删除数据库所有的文件信息
+    # 删除数据库所有的文件信息
     del_obj.delete()
     return JsonResponse({'status': True})
+
+
+@csrf_exempt
+def cos_credential(request, project_id):
+    """
+    1.验证文件大小限制（单文件大小(5M)限制，总文件大小(2G)限制）
+    2.获取cos临时秘钥
+    """
+    per_file_size_limit = request.userInfo.price_policy.per_file_size * 1024 * 1024
+    project_space_limit = request.userInfo.price_policy.project_space * 1024 * 1024 * 1024
+    use_space = request.userInfo.project.use_space
+    file_list = json.loads(request.body.decode('utf-8'))
+    total_size = 0
+
+    for file in file_list:
+        if file['size'] > per_file_size_limit:
+            err_msg = '单文件超出限制（{}M）\n 文件{}'.format(request.userInfo.price_policy.per_file_size, file['name'])
+            return JsonResponse({'status': False, 'error': err_msg})
+        total_size += file['size']
+    if use_space + total_size > project_space_limit:
+        err_msg = "项目空间超出限制（{}G）".format(request.userInfo.price_policy.project_space)
+        return JsonResponse({'status': False, 'error': err_msg})
+    result_dict = get_cos_credential(bucket_name=request.userInfo.project.bucket,
+                                     bucket_region=request.userInfo.project.region)
+    return JsonResponse({'status': True, 'data': result_dict})
+
+
+@csrf_exempt
+def file_post(request, project_id):
+    """
+    校验前端上传的数据
+   'name' , 'size': , 'key', 'parent', 'etag' , 'file_path'
+    """
+    print(request.POST)
+    form = FileModelFOrm(request, data=request.POST)
+    if form.is_valid():
+        data_dict = form.cleaned_data
+        data_dict.pop('etag')
+        data_dict.update({'project': request.userInfo.project, 'file_type': 1, 'update_user': request.userInfo.user})
+        instance = models.FileRepository.objects.create(**data_dict)
+        # 更新文件空间
+        request.userInfo.project.use_space += data_dict['file_size']
+        result = {
+            'id': instance.id,
+            'name': instance.name,
+            'file_size': instance.file_size,
+            'username': instance.update_user.username,
+            'datetime': instance.update_time,
+            'url': reverse('app01:file_download', kwargs={"project_id": project_id, 'file_id': instance.id})
+        }
+        return JsonResponse({'status': True, 'data': result})
+
+    return JsonResponse({'status': False})
+
+
+def file_download(request, project_id, file_id):
+    return None

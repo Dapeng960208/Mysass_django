@@ -1,7 +1,5 @@
 import base
-
 from app01 import models
-
 
 def run():
     """离线脚本，用来创建免费版的价格策略"""
@@ -13,7 +11,7 @@ def run():
             price=0,
             project_num=3,
             project_member=2,
-            project_space=20,
+            project_space=1,
             per_file_size=5,
         )
 

@@ -2,6 +2,7 @@ from qcloud_cos import CosConfig
 from qcloud_cos import CosS3Client
 from django.conf import settings
 from qcloud_cos import CosServiceError
+from sts.sts import Sts
 
 
 def create_bucket(bucket_name, bucket_region='ap-beijing'):
@@ -9,13 +10,23 @@ def create_bucket(bucket_name, bucket_region='ap-beijing'):
     secret_key = settings.COS_SECRET_KEY
     config = CosConfig(Region=bucket_region, SecretId=secret_id, SecretKey=secret_key)
     client = CosS3Client(config)
-    try:
-        client.create_bucket(
-            Bucket=bucket_name,
-            ACL="public-read"
-        )
-    except CosServiceError as e:
-        print(e.get_resource_location(), e.get_error_msg())
+
+    client.create_bucket(Bucket=bucket_name, ACL="public-read")
+    # 为每个桶设置跨域要求
+    cors_config = {
+        'CORSRule': [
+            {
+                'MaxAgeSeconds': 500,
+                'AllowedOrigin': ['*'],
+                'AllowedMethod': ["GET", "PUT", "HEAD", "POST", "DELETE"],
+                'AllowedHeader': ['*'],
+                'ExposeHeader': ["*"]
+            }
+        ]
+    }
+
+    client.put_bucket_cors(Bucket=bucket_name,
+                           CORSConfiguration=cors_config)
 
 
 def upload_file(bucket_name, bucket_region, file_object, key):
@@ -56,3 +67,48 @@ def delete_file_list(bucket_name, bucket_region, key_list):
         Bucket=bucket_name,
         Delete=objects
     )
+
+
+def get_cos_credential(bucket_name, bucket_region):
+    config = {
+        # 临时密钥有效时长，单位是秒
+        'duration_seconds': 60,
+        'secret_id': settings.COS_SECRET_ID,
+        # 固定密钥
+        'secret_key': settings.COS_SECRET_KEY,
+        # 换成你的 bucket
+        'bucket': bucket_name,
+        # 换成 bucket 所在地区
+        'region': bucket_region,
+        # 这里改成允许的路径前缀，可以根据自己网站的用户登录态判断允许上传的具体路径
+        # 例子： a.jpg 或者 a/* 或者 * (使用通配符*存在重大安全风险, 请谨慎评估使用)
+        'allow_prefix': '*',
+        # 密钥的权限列表。简单上传和分片需要以下的权限，其他权限列表请看 https://cloud.tencent.com/document/product/436/31923
+        'allow_actions': [
+            # 简单上传
+            'name/cos:PutObject',
+            'name/cos:PostObject',
+            # 分片上传
+            # 'name/cos:InitiateMultipartUpload',
+            # 'name/cos:ListMultipartUploads',
+            # 'name/cos:ListParts',
+            # 'name/cos:UploadPart',
+            # 'name/cos:CompleteMultipartUpload'
+        ],
+
+    }
+    sts = Sts(config)
+    result_dict = sts.get_credential()
+    return result_dict
+
+
+def check_file(bucket_name, bucket_region, key):
+    secret_id = settings.COS_SECRET_ID
+    secret_key = settings.COS_SECRET_KEY
+    config = CosConfig(Region=bucket_region, SecretId=secret_id, SecretKey=secret_key)
+    client = CosS3Client(config)
+    data = client.head_object(
+        Bucket=bucket_name,
+        Key=key,
+    )
+    return data
