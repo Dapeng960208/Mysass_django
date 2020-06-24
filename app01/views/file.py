@@ -1,10 +1,12 @@
-from django.shortcuts import render, redirect, reverse, HttpResponse
+from django.shortcuts import render, reverse,HttpResponse
 from app01 import models
 from django.http import JsonResponse
 from app01.forms.file import FileModelFOrm, FolderModelFOrm
 from utils.tencent.cos import delete_file, delete_file_list, get_cos_credential
 from django.views.decorators.csrf import csrf_exempt
 import json
+from django.utils.encoding import escape_uri_path
+
 
 
 def file(request, project_id):
@@ -151,4 +153,15 @@ def file_post(request, project_id):
 
 
 def file_download(request, project_id, file_id):
-    return None
+    import requests
+    file_obj = models.FileRepository.objects.filter(project_id=project_id, id=file_id,
+                                                    update_user=request.userInfo.user).first()
+
+    print(file_obj.file_path)
+    data = requests.get(file_obj.file_path).content
+    response = HttpResponse(data)
+    response['Content-Type'] = 'application/octet-stream'
+    print(file_obj.name)
+
+    response['Content-Disposition'] = "attachment; filename*=utf-8''{}".format(escape_uri_path(file_obj.name))
+    return response
