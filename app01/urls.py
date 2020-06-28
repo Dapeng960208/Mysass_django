@@ -14,7 +14,7 @@ Including another URLconf
     2. Add a URL to urlpatterns:  url(r'^blog/', include('blog.urls'))
 """
 from django.conf.urls import url
-from app01.views import account, project, manage, wiki, file
+from app01.views import account, project, manage, wiki, file, settings,issues
 
 urlpatterns = [
     url(r'^register/$', account.register, name='register'),
@@ -32,7 +32,7 @@ urlpatterns = [
     # 项目管理路由
     url(r'^manage/(?P<project_id>\d+)/dashboard/$', manage.dashboard, name='dashboard'),
 
-    url(r'^manage/(?P<project_id>\d+)/issues/$', manage.issues, name='issues'),
+    url(r'^manage/(?P<project_id>\d+)/issues/$', issues.issues, name='issues'),
 
     url(r'^manage/(?P<project_id>\d+)/statistics/$', manage.statistics, name='statistics'),
     # 文件路由管理
@@ -48,5 +48,7 @@ urlpatterns = [
     url(r'^manage/(?P<project_id>\d+)/wiki/edit//(?P<wiki_id>\d+)/$', wiki.wiki_edit, name='wiki_edit'),
     url(r'^manage/(?P<project_id>\d+)/wiki/catalog/$', wiki.wiki_catalog, name='wiki_catalog'),
     url(r'^manage/(?P<project_id>\d+)/wiki/upload/$', wiki.wiki_upload, name='wiki_upload'),
-    url(r'^manage/(?P<project_id>\d+)/settings/$', manage.settings, name='settings'),
+    # setting 路由管理
+    url(r'^manage/(?P<project_id>\d+)/settings/$', settings.settings, name='settings'),
+    url(r'^manage/(?P<project_id>\d+)/settings/delete/$', settings.settings_delete, name='settings_delete'),
 ]

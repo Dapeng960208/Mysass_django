@@ -29,6 +29,44 @@ def create_bucket(bucket_name, bucket_region='ap-beijing'):
                            CORSConfiguration=cors_config)
 
 
+def delete_bucket(bucket_name, bucket_region='ap-beijing'):
+    """
+    删除桶
+    先删除桶中的文件，再删除桶中的碎片，再删除空桶
+    """
+    secret_id = settings.COS_SECRET_ID
+    secret_key = settings.COS_SECRET_KEY
+    config = CosConfig(Region=bucket_region, SecretId=secret_id, SecretKey=secret_key)
+    client = CosS3Client(config)
+    try:
+        # 找到所有文件下的对象 删除所有的对象
+        while True:
+            all_objs = client.list_objects(bucket_name)
+            contents = all_objs.get('Contents')
+            if not contents:
+                break
+            Delete = {'Object': [{'Key': item['Key']} for item in contents]}
+            client.delete_objects(
+                Bucket=bucket_name,
+                Delete=Delete
+            )
+            if all_objs['IsTruncated'] == "false":
+                break
+        # 找到所有的文件碎片 删除所有的文件碎片
+        while True:
+            part_uploads = client.list_multipart_uploads(bucket_name)
+            uploads = part_uploads.get('Upload')
+            if not uploads:
+                break
+            for item in uploads:
+                client.abort_multipart_upload(bucket_name, item['Key'], item['UploadId'])
+            if part_uploads['IsTruncated'] == "false":
+                break
+            client.delete_bucket(bucket_name)
+    except CosServiceError as e:
+        pass
+
+
 def upload_file(bucket_name, bucket_region, file_object, key):
     secret_id = settings.COS_SECRET_ID
     secret_key = settings.COS_SECRET_KEY
